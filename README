@@ -1,0 +1,37 @@
+The model is based on a Multiple Logistic Regression (MLR) taking four variables from the 5’UTRs 
+to predict a score: Length, GC percentage, upstream open reading frames (uORFs) and similarity to 
+Atf4 positive control (Atf4like). Moreover, despite the score, we only consider positive targets 
+containing at least one uORF, so the previously described biological mechanism for p-eIF2α-dependent 
+translation can be possible. Then, before performing MLR analysis, we filtered our training dataset 
+for transcripts having at least one uORF. 
+
+For our MLR model, we obtain a value for each beta coefficient of the following formula: 
+Score= exp(Prescore) / 1+exp(Prescore) 
+Prescore=β0+β1*A+β2*B+β3*C+β4*D+β5*A*B+β6*A*C+β7*A*D+β8*B*C+β9*B*D+β10*C*D
+Where: A = uORFs, B = Atf4like, C = Length, D = %GC. 
+
+The first step to train our model was to obtain the A, B, C and D values for each 5’UTR in order to 
+be able to obtain beta values. 
+  -A (uORFs) is a discrete variable that counts all possible uORFs. 
+  To achieve this, we consider each of the three possible reading 
+  frames and count the AUGs with an “adequate” Kozak consensus sequence 
+  within them (18). We exclude the ones either too close to the previous 
+  one (less than 30 nucleotides of distance, considering a minimum space 
+  for the ribosome to leaky-scan the first uAUG and try to translate a second 
+  uAUG (19)) or within an already opened reading frame by a previous uORF that 
+  did not found a STOP codon. 
+
+  -B (Atf4like) is a categorical variable (0, 1, 2 or 3) that counts the reading 
+  frames in which we find an uORF which has still not found a STOP codon and was 
+  preceded by at least one already closed uORF (not being necessary that the already 
+  closed uORF is in the same reading frame). 
+
+  -C (Length) is a continuous variable that counts the number of nucleotides present in the 5’UTR.
+
+  -D (%GC) is a continuous variable that takes the percentage of G or C nucleotides from the total length. 
+
+Once having the input variables for each 5’UTR, we split the filtered training dataset in four subsets, 
+containing the closest to the same ratio of positive to negative targets. Then, we clustered the subsets 
+in the four possible groups of three, in order to use these clusters to train the model. For each cluster, 
+a MLR model was trained using sklearn.linear_model.LogisticRegression module from Python3. We tested each 
+MLR model using the remaining subset for each case as training.
